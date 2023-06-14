@@ -1,6 +1,6 @@
-# DASC5420-Project
+# Applied Advanced Linear Regressions on Housing Price
 
-This repo contains a pdf report, data, and R code for my DASC5420 course project. In this study, I develop housing sale price prediction models using several regression machine learning algorithms, including Linear, Ridge, Lasso, Elastic Net, Principal Component, and Random Forest regressions. 
+This repo contains data, R code, and report for my DASC5420 course project. In this study, I develop housing sale price prediction models using several regression machine learning algorithms, including Linear, Ridge, Lasso, Elastic Net, Principal Component, and Random Forest regressions. 
 
 Those files are stored in the following respective folders.
 
