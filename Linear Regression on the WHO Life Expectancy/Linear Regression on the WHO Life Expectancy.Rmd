@@ -1,10 +1,10 @@
 ---
-title: "Linear Regression analysis on the WHO Life Expectancy dataset"
+title: "Linear Regression on the WHO Life Expectancy dataset"
 author: "Khanh Tran"
 output:
+  html_document: default
   pdf_document:
     latex_engine: lualatex
-  html_document: default
 ---
 
 
