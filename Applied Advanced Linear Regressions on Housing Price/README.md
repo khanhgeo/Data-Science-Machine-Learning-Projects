@@ -1,9 +1,11 @@
 # DASC5420-Project
 
-This repo contains a pdf report, data, and R code for my DASC5420 course project. Those files are stored in the following respective folders.
+This repo contains a pdf report, data, and R code for my DASC5420 course project. In this study, I develop housing sale price prediction models using several regression machine learning algorithms, including Linear, Ridge, Lasso, Elastic Net, Principal Component, and Random Forest regressions. 
 
-01. Report folder stores a final pdf report
+Those files are stored in the following respective folders.
 
-02. Data folder contains all required data for this project
+01. Data folder contains all required data for this project
 
-03. Codes folder stores all R code of this project
+02. Codes folder stores all R code of this project
+
+03. Report folder stores a final pdf report
