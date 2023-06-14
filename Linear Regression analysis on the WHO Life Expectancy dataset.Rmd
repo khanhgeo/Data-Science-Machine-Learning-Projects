@@ -98,7 +98,7 @@ df %>%
 
 
 
-**Process Data Transformation**
+**Data Cleansing and Transformation**
 
 ```{r}
 # total number of missing values in each columns
