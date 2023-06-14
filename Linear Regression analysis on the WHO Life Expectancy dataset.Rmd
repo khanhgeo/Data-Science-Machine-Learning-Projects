@@ -1,0 +1,261 @@
+---
+title: "Linear Regression analysis on the WHO Life Expectancy dataset"
+author: "Khanh Tran"
+output:
+  pdf_document:
+    latex_engine: lualatex
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+
+```{r, results='hide'}
+# install and call required library
+pkg_list = c("dplyr","tidyverse","ISLR","ISLR2", "caret","ModelMetrics","corrplot", 'ggpubr', 'GGally')
+# Install packages if needed
+for (pkg in pkg_list)
+  {# Try loading the library.
+    if ( ! library(pkg, logical.return=TRUE, character.only=TRUE) )
+      {
+        # If the library cannot be loaded, install it; then load.
+        install.packages(pkg)
+        library(pkg, character.only=TRUE)
+      }
+  }
+```
+
+```{r}
+# load CSV data
+df <- read.csv("Life Expectancy Data.csv")
+```
+
+
+**Design a hypothesis for something you can predict from this data set using Linear Regression**
+
+- Hypothesis/Objectives: Life expectancy can be predicted by using linear regression model based on various socio-economic factors, healthcare expenditures, and disease-related variables that are available in the dataset.
+
+- Justification: The dataset contains information on life expectancy and various predictors that are believed to have a significant impact on life expectancy. It includes data on 193 countries spanning over 15 years, with a total of 22 features. The dataset provides a wide range of socio-economic and health-related variables, including GDP, education, alcohol consumption, mortality rates, and healthcare expenditures. Linear regression is suitable for identifying correlations between these factors and life expectancy, and can predict life expectancy based on patterns in the data.
+
+- Life expectancy is influenced by measurable factors, and a large dataset with information on life expectancy and several independent variables can be used to train a linear regression model to identify correlations and predict life expectancy for new observations. The inputs would be socio-economic factors (such as GDP, Income, Country Status, Schooling), health-related variables (for instance alcohol consumption, mortality rates, and healthcare expenditures), and disease-related factors, like HIV.AIDS. While, the output would be predicted life expectancy.
+
+
+**Exploratory Data Analysis**
+
+```{r}
+# Variable names in dataset
+names(df)
+```
+
+```{r}
+# quick view on the dataset
+glimpse(df)
+```
+
+
+```{r}
+# plot histogram of life expectancy
+hist(df$Life.expectancy, main = "Life Expectancy Histogram", xlab = "Life Expectancy")
+```
+```{r}
+summary(df$Life.expectancy)
+```
+
+```{r}
+# Plot Life Expectancy by Income and Country Status
+ggplot(df, aes(Life.expectancy, Income.composition.of.resources)) +
+  geom_point(aes(color = Status), alpha = 0.5) +
+  labs(title = "Life Expectancy by Income and Country Status",
+       x = "Life Expectancy", y = "Income")
+```
+
+```{r}
+# Plot Life Expectancy by Schooling
+ggplot(df, aes(Life.expectancy, Schooling)) +
+  geom_point(aes(color = Status), alpha = 0.5)+
+  labs(title = "Life Expectancy by Schooling", x = "Life Expectancy", y ="Scholling")
+```
+```{r}
+# Boxplot Life Expectancy by Country Status
+ggplot(df,aes(x=Status, y=Life.expectancy, fill= Status)) +
+  geom_boxplot() +
+  labs(title = "Life Expectancy by Country Status", x = "Country Status", y = "Life Expectancy")
+```
+
+```{r}
+# Plot box plots of numeric variables
+df %>% 
+  select(4:22) %>% 
+  gather() %>% 
+  ggplot(aes(x = key, y = value)) +
+  geom_boxplot() +
+  labs(title = "Boxplots of Numerical Features", x = "Features", y = "Value") +
+  facet_wrap(~key, scales = "free") +
+  theme_bw()
+```
+
+
+
+**Process Data Transformation**
+
+```{r}
+# total number of missing values in each columns
+colSums(is.na(df))
+```
+
+
+
+```{r}
+# fill missing values with respective mean values
+for(i in 1:ncol(df)){
+  df[is.na(df[,i]), i] <- mean(df[,i], na.rm = TRUE)
+}
+```
+
+Filling in missing values of features with their mean allows us to preserve the sample size and use all available data in the analysis. This is important for maximizing the statistical power of the analysis and reducing the uncertainty of the estimates.
+
+```{r}
+# numeric predictors
+num.cols <- c('Adult.Mortality', 'infant.deaths', 'Alcohol', 'percentage.expenditure', 'Hepatitis.B',
+              'Measles', 'BMI', 'under.five.deaths', 'Polio', 'Total.expenditure', 'Diphtheria',
+              'HIV.AIDS', 'GDP', 'Population', 'thinness..1.19.years', 'thinness.5.9.years',
+              'Income.composition.of.resources', 'Schooling')
+
+# standardize the numeric predictors using the scale() function
+df[num.cols] <- apply(df[num.cols], 2, scale)
+```
+
+Standardizing numeric predictors in linear regression, can help to improve the interpretability. This is due to the fact that standardizing the predictors puts them on the same scale, so the coefficients can be interpreted as the change in the response variable for a one-unit change in the predictor, holding all other predictors constant. In addition, it also help to enhance numerical stability, and performance of the model.
+
+
+```{r}
+# remove outliers points which lies outside the 3 standard deviation zones
+df_clean <- df[rowSums(abs(df[num.cols]) < 3) == length(num.cols), ]
+```
+
+Since outliers can have a significant impact on the estimated coefficients of the linear regression model. They can bias the regression line and reduce the accuracy of the model. By removing these outliers, we can reduce their influence on the model and improve its accuracy.
+
+
+```{r}
+# numeric variables
+num.cols1 <- c('Life.expectancy','Adult.Mortality', 'infant.deaths', 'Alcohol', 'percentage.expenditure',
+               'Hepatitis.B', 'Measles', 'BMI', 'under.five.deaths', 'Polio', 'Total.expenditure',
+               'Diphtheria', 'HIV.AIDS', 'GDP', 'Population', 'thinness..1.19.years',
+               'thinness.5.9.years', 'Income.composition.of.resources', 'Schooling')
+
+# display correlation between numeric variables
+corrplot(cor(df_clean[,num.cols1]), method = "circle", order = "hclust", 
+         tl.srt = 45)
+```
+```{r}
+# remove Country variable from predictors list
+df_clean <- select(df_clean,2:22)
+```
+
+I would like to exclude the Country variable from the linear regression model and focus on the other relevant predictor variables in the dataset. This can help to simplify the model and improve the interpretability and generalization performance of the model.
+
+
+
+
+**Perform a Linear Regression and comment on the output**
+
+```{r}
+# Split the data into training and testing
+set.seed(5420)
+sample <- sample(c(TRUE, FALSE), nrow(df_clean), replace=TRUE, prob=c(0.80,0.20))
+train <- df_clean[sample, ]
+test <- df_clean[!sample, ]
+y.test <- df_clean[!sample, ]$Life.expectancy
+
+# Fit full model
+model.full = lm(Life.expectancy ~ ., data=train)
+summary(model.full)
+```
+
+The p-value < 2.2e-16 for a F-statistic of 487.1, shows significant evidence of a relationship between
+the predictors and the life expectancy. R-squared of 0.82 means that 82 percent variance of life expectancy can be explained by the predictors in the model.
+
+Year, Country Status, Adult.Mortality, infant.deaths, percentage.expenditure, Hepatitis.B, under.five.deaths, Polio, Total.expenditure, Diphtheria, HIV.ADIS,  thinness.5.9.years, Income and Schooling are statistically significant as their p-values are below 0.05 or near zero. The remaining predictors are not statistical significance.
+
+
+```{r}
+# build model using only predictors that are statistical significant based on full model result.
+
+model.finetuned <- lm(Life.expectancy ~ .-Alcohol-Measles-BMI-GDP-Population-thinness..1.19.years, 
+                      data = train)
+summary(model.finetuned)
+```
+
+The p-value < 2.2e-16 for a F-statistic of 694.8 of the fine-tuned model shows significant evidence of a relationship between the predictors and the life expectancy. The adjusted R-squared and residual standard error of finetuned model is similar to the full model.
+
+
+
+**Print out algorithm performance**
+
+```{r}
+# predict test data by finetuned model
+pred <- predict(model.finetuned, newdata=test)
+# Checking RMSE
+rmse(pred,y.test)
+```
+The RSEM is 3.049673 is slightly less than the RSME of train data. 
+
+```{r}
+# adjusted R^2 
+summary(model.finetuned)$adj.r.squared
+```
+The adjusted R squared of predicted test data is 0.848, which is similar to result of train data.
+
+```{r}
+# check linearity assumptions
+par(mfrow = (c(2,2)))
+plot(model.finetuned)
+```
+
+The residuals v fitted values chart doesn’t show any distinct shape, the model appears to be a good
+fit to the data.
+
+
+
+**Iterate and improve algorithm performance**
+
+The stepwise regression with forward selection was implemented in order to find the subset of variables in the data set resulting in the best performing model, which has the lowest prediction error. The process starts with no predictors in the model, iteratively adds the most contributive predictors, and stops when the improvement is no longer statistically significant.
+
+I employed 10-fold cross-validation to estimate the average prediction error (as measured by RMSE) of each model. By comparing the RMSE of all models, the statistical metric allowed for automatic selection of the best performing model, defined as the one that minimizes RMSE.
+
+```{r}
+# Set seed for reproducibility
+set.seed(5420)
+
+# Train the model
+step.model <- caret::train(Life.expectancy ~ ., data = train,
+                    method = "leapForward", 
+                    tuneGrid = data.frame(nvmax = 1:10),
+                    trControl = trainControl(method = "cv", number = 10)
+                    )
+step.model$results
+```
+```{r}
+# plot step model
+plot(step.model)
+```
+Based on the plot of step model the optimum number of predictors should be used for linear regression to predict life expectancy in this dataset is 9, which gives the lowest RMSE value.
+
+```{r}
+# the best tune model
+step.model$bestTune
+```
+
+```{r}
+# make predictions for test data
+predictions <- step.model %>% predict(test)
+
+# model performance metrics
+data.frame(
+  RMSE = caret::RMSE(predictions, test$Life.expectancy),
+  Rsquare = caret::R2(predictions, test$Life.expectancy)
+)
+```
+
