@@ -1,0 +1,1 @@
+This project aims to predict life expectancy based on various socio-economic factors, healthcare expenditures, and disease-related variables. The dataset used in this project contains information on life expectancy and predictors that are believed to have a significant impact on life expectancy. It spans 193 countries over a 15-year period, with a total of 22 features.
